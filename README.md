@@ -1,2 +1,2 @@
 # Telegram_Chat_Statistics
-Export Statistics for a Telegram group chat
+Utilize a Telegram group chat as a JSON data source, extract its plain text content, and generate a word cloud.
