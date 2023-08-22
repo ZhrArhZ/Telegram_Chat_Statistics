@@ -22,13 +22,10 @@ def read_json(file_path: str) -> dict:
         raise json.JSONDecodeError(f"Error decoding JSON in '{file_path}': {e}", e.doc, e.pos)
 
 
-def write_file(file_path: str, file_name: str, words_list: list,
+def write_file(file_name: str, words_list: list,
                output_dir=OUPUT_DIR/'result_Data'):
 
-    """Reads the contents of a text file.
-
-    Raises:
-        FileNotFoundError: If the specified file does not exist.
+    """Writes a list of words to a text file.
     """
 
     try:
@@ -37,4 +34,4 @@ def write_file(file_path: str, file_name: str, words_list: list,
             formatted_list = {f"{item}\n" for item in list}
             f.writelines(formatted_list)
     except FileNotFoundError:
-        raise FileNotFoundError(f"File '{file_path}' not found.")
+        raise FileNotFoundError(f"Directory '{output_dir}' not found.")

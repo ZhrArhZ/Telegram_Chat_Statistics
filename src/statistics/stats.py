@@ -36,7 +36,7 @@ class ChatStatistics:
         # load persian stopwords
         stopwords = stopwords_list()
         stopwords.extend(verbal_stopwords.extra_stopwords)
-        self.stopwords = stopwords
+        self.stopwords = set(stopwords)
 
         # extract all kinds of text from the json file
         logger.info("extracting texts from chat_data")
@@ -82,7 +82,6 @@ class ChatStatistics:
 
         clean_txt = demoji.replace(self.text_content['plain text'], "")
 
-
         # Normalize and tokenize the cleaned text
 
         normalizer = Normalizer()
@@ -100,11 +99,12 @@ class ChatStatistics:
 
         reshaped = arabic_reshaper.reshape(filtered_text)
         reshaped_text = re.sub(
-            u"[\u200b\u200c\u2063\u200f\U0001f979\U0001fae0\U0001fae3\U0001fae3]", "", reshaped)
+         u"[\u200b\u200c\u2063\u200f\U0001f979\U0001fae0\U0001fae3\U0001fae3]",
+         "", reshaped)
 
         return reshaped_text
 
-    def generate_wordcloud_from_plainText(self, output_dir: Union[str, Path]):
+    def generate_wordcloud_from_plainText(self, output_dir=DATA_DIR):
 
         """Generate a wordcloud from the chat data.
 
@@ -115,16 +115,15 @@ class ChatStatistics:
         logger.info("Generating WordCloud")
         wordcloud = WordCloud(str(FONT_PATH)).generate(bidi_text)
         logger.info(f'saving wordcloud to {output_dir}')
-        wordcloud.to_file(str(Path(output_dir) / 'wordcloud.png'))
+        wordcloud.to_file(str(output_dir.parent / 'result_Data' / 'wordcloud.png'))
 
     def show_emails(self):
-       
+ 
         """ Creates a text file to store and gather all emails from a list
           of emails.
         """
 
-        write_file(str(DATA_DIR/'Emails.txt'), 'Emails.txt',
-                   self.text_content['email'])
+        write_file('Emails.txt', self.text_content['email'])
 
         logger.info("Emails written to Emails.txt")
 
@@ -134,8 +133,7 @@ class ChatStatistics:
           of hashtags.
         """
 
-        write_file(str(DATA_DIR/'Hashtags.txt'), 'Hashtags.txt',
-                   self.text_content['hashtag'])
+        write_file('Hashtags.txt', self.text_content['hashtag'])
 
         logger.info("Hashtags written to Hashtags.txt")
 
@@ -145,8 +143,7 @@ class ChatStatistics:
          a lsit of links.
         """
 
-        write_file(str(DATA_DIR/'Links.txt'), 'Links.txt',
-                   self.text_content['link'])
+        write_file('Links.txt', self.text_content['link'])
 
         logger.info("Links written to Links.txt")
 
@@ -156,15 +153,14 @@ class ChatStatistics:
           of IDs.
         """
 
-        write_file(str(DATA_DIR/'Channel_id.txt'), 'Channel_id.txt',
-                   self.text_content['mention'])
+        write_file('Channel_id.txt', self.text_content['mention'])
 
         logger.info("Channel IDs written to hanel_id.txt")
 
 
 if __name__ == '__main__':
     ch1 = ChatStatistics(PATH)
-    ch1.generate_wordcloud_from_plainText(DATA_DIR)
+    ch1.generate_wordcloud_from_plainText()
     ch1.show_hashtags()
     ch1.show_Channel_id()
     ch1.show_links()
