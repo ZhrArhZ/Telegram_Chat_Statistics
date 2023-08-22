@@ -1,5 +1,4 @@
 import demoji
-import json
 import arabic_reshaper
 import re
 
@@ -10,40 +9,36 @@ from hazm import word_tokenize, Normalizer, stopwords_list
 from wordcloud import WordCloud
 from bidi.algorithm import get_display
 from loguru import logger
+from src.utils.io import read_json, write_file
 
 
-PATH = DATA_DIR / 'result.json'
+json_file = input('Please enter the name of your json file like result.json: ')
+
+PATH = DATA_DIR / f'{json_file}'
 FONT_PATH = DATA_DIR / 'B-NAZANIN.TTF'
 
 
 class ChatStatistics:
     """
-    Generate chat statistics from a Telegram chat json file
+    Generate chat statistics from a Telegram chat json file.
     """
     def __init__(self, Chat_file: Union[str, Path]):
 
-        """
-        :param chat_file: path to Telegram export json file
+        """Initializes the ChatStatistics class.
+
+        :param chat_file: Path to Telegram export json file.
         """
 
         # load chat data
         logger.info(f"Loading chat data from {Chat_file}")
-        with open(Chat_file) as text:
-            self.chat_data = json.load(text)
+        self.chat_data = read_json(PATH)
 
         # load persian stopwords
         stopwords = stopwords_list()
         stopwords.extend(verbal_stopwords.extra_stopwords)
         self.stopwords = stopwords
 
-    def extract_all_text(self):
-
-        """extract all kinds of text from the json file
-
-        Returns:
-            text_content: a Dictionary of all text types and their content
-        """
-
+        # extract all kinds of text from the json file
         logger.info("extracting texts from chat_data")
         text_content = {'plain text': '',
                         'email': [],
@@ -58,39 +53,21 @@ class ChatStatistics:
 
         for msg in self.chat_data['messages']:
             for item in msg['text_entities']:
-                if item['type'] == 'plain':
-                    text_content['plain text'] += f"  {item['text']}"
 
-                elif item['type'] == 'text_link':
-                    text_content['text_link'].append(item['href'])
+                item_type = item['type']
+                item_text = item['text']
 
-                elif item['type'] == 'hashtag':
-                    text_content['hashtag'].append(item['text'])
+                if item_type == 'plain':
+                    text_content['plain text'] += f"  {item_text}"
+                elif item_type in ['text_link', 'link', 'email', 'code',
+                                   'italic', 'mention', 'hashtag', 'bold']:
+                    text_content[item_type].append(item_text)
 
-                elif item['type'] == 'link':
-                    text_content['link'].append(item['text'])
+        self.text_content = text_content
 
-                elif item['type'] == 'link':
-                    text_content['link'].append(item['text'])
+    # clean, normalize and reshape the plain text content for final word cloud.
 
-                elif item['type'] == 'email':
-                    text_content['email'].append(item['text'])
-
-                elif item['type'] == 'code':
-                    text_content['code'].append(item['text'])
-
-                elif item['type'] == 'italic':
-                    text_content['italic'].append(item['text'])
-
-                elif item['type'] == 'mention':
-                    text_content['mention'].append(item['text'])
-
-                elif item['type'] == 'bold':
-                    text_content['bold'].append(item['text'])
-        return text_content
-
-    # clean, normalize, reshape for final word cloud
-    def clean_plain_text(self):
+    def clean_plain_text(self) -> str:
 
         """removing emojies, punctuations and stopwords from text
             then tokenize and reshape it, makeing a filtered text.
@@ -98,26 +75,38 @@ class ChatStatistics:
         Returns:
             reshaped_text: a clean ready string for making wordcloud
         """
-        text_content = self.extract_all_text()
-        logger.info("chat_data is cleaning,normalizing and reshaping")
-        clean_txt = demoji.replace(text_content['plain text'], "")
+
+        logger.info("Cleaning, normalizing, and reshaping chat data")
+
+        # Remove emojis from plain text
+
+        clean_txt = demoji.replace(self.text_content['plain text'], "")
+
+
+        # Normalize and tokenize the cleaned text
+
         normalizer = Normalizer()
         normalized_text = normalizer.normalize(clean_txt)
         words = word_tokenize(normalized_text)
 
-        # self.stopwords contains both persian punctuations and stopwords.
+        # remove persian punctuations and stopwords.
+
         filtered_words = list(filter(lambda word:
                                      word not in self.stopwords, words))
+
         filtered_text = ' '.join(filtered_words)
+
+        # Reshape the text for proper rendering
 
         reshaped = arabic_reshaper.reshape(filtered_text)
         reshaped_text = re.sub(
-            u"[\u200b\u200c\u2063\u200f\U0001f979]", "", reshaped)
+            u"[\u200b\u200c\u2063\u200f\U0001f979\U0001fae0\U0001fae3\U0001fae3]", "", reshaped)
+
         return reshaped_text
 
     def generate_wordcloud_from_plainText(self, output_dir: Union[str, Path]):
 
-        """Generate a wordcloud from the chat data
+        """Generate a wordcloud from the chat data.
 
         :param output_dir: path to output directory for wordcloud image
         """
@@ -128,7 +117,55 @@ class ChatStatistics:
         logger.info(f'saving wordcloud to {output_dir}')
         wordcloud.to_file(str(Path(output_dir) / 'wordcloud.png'))
 
+    def show_emails(self):
+       
+        """ Creates a text file to store and gather all emails from a list
+          of emails.
+        """
+
+        write_file(str(DATA_DIR/'Emails.txt'), 'Emails.txt',
+                   self.text_content['email'])
+
+        logger.info("Emails written to Emails.txt")
+
+    def show_hashtags(self):
+
+        """ Creates a text file to store and gather all hashtags from a list
+          of hashtags.
+        """
+
+        write_file(str(DATA_DIR/'Hashtags.txt'), 'Hashtags.txt',
+                   self.text_content['hashtag'])
+
+        logger.info("Hashtags written to Hashtags.txt")
+
+    def show_links(self):
+
+        """Creates a text file to gather and store all Link addresses from
+         a lsit of links.
+        """
+
+        write_file(str(DATA_DIR/'Links.txt'), 'Links.txt',
+                   self.text_content['link'])
+
+        logger.info("Links written to Links.txt")
+
+    def show_Channel_id(self):
+
+        """Creates a text file to store and gather all channel IDs from a list
+          of IDs.
+        """
+
+        write_file(str(DATA_DIR/'Channel_id.txt'), 'Channel_id.txt',
+                   self.text_content['mention'])
+
+        logger.info("Channel IDs written to hanel_id.txt")
+
 
 if __name__ == '__main__':
     ch1 = ChatStatistics(PATH)
     ch1.generate_wordcloud_from_plainText(DATA_DIR)
+    ch1.show_hashtags()
+    ch1.show_Channel_id()
+    ch1.show_links()
+    ch1.show_emails()
