@@ -1,6 +1,5 @@
-import demoji
+import emoji
 import arabic_reshaper
-import re
 
 from typing import Union
 from pathlib import Path
@@ -79,8 +78,9 @@ class ChatStatistics:
         logger.info("Cleaning, normalizing, and reshaping chat data")
 
         # Remove emojis from plain text
-
-        clean_txt = demoji.replace(self.text_content['plain text'], "")
+     
+        clean_txt = emoji.replace_emoji(self.text_content['plain text'],
+                                        replace='')
 
         # Normalize and tokenize the cleaned text
 
@@ -97,10 +97,7 @@ class ChatStatistics:
 
         # Reshape the text for proper rendering
 
-        reshaped = arabic_reshaper.reshape(filtered_text)
-        reshaped_text = re.sub(
-         u"[\u200b\u200c\u2063\u200f\U0001f979\U0001fae0\U0001fae3\U0001fae3]",
-         "", reshaped)
+        reshaped_text = arabic_reshaper.reshape(filtered_text)
 
         return reshaped_text
 
@@ -115,10 +112,10 @@ class ChatStatistics:
         logger.info("Generating WordCloud")
         wordcloud = WordCloud(str(FONT_PATH)).generate(bidi_text)
         logger.info(f'saving wordcloud to {output_dir}')
-        wordcloud.to_file(str(output_dir.parent / 'result_Data' / 'wordcloud.png'))
+        wordcloud.to_file(str(output_dir.parent/'result_Data'/'wordcloud.png'))
 
     def show_emails(self):
- 
+
         """ Creates a text file to store and gather all emails from a list
           of emails.
         """

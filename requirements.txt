@@ -2,5 +2,5 @@ hazm==0.9.3
 wordcloud==1.9.2
 ar-wordcloud==0.4
 python-bidi==0.4.2
-demoji==1.1.0
+emoji==1.7.0
 loguru==0.5.3
